@@ -1,0 +1,334 @@
+#!/usr/bin/env python 
+import argparse
+import subprocess
+import time
+import jwt
+from easemlci.check_in import github_api
+import datetime
+from subprocess import PIPE
+import shutil
+import yaml
+from shutil import copyfile
+import requests
+from github import Github
+import os
+
+from easemlci.mail import sendMailGmail
+
+import easemlci.eval.easeMLCI as easemlCI
+
+class easeMLCheck():
+    def __init__(self,name,client,app_id,inst_id,project,revision,branch,module):
+        self.name=name
+        self.project=project
+        self.check_data=None
+        self.client=client
+        self.branch=branch
+        self.revision=revision
+        self.module=module(name,client,app_id,inst_id,project,revision,branch)
+        self.summary=''
+        self.text=''
+        self.text_data=''
+            
+    def StartCheck(self):
+        req={"name":self.name}
+        self.check_data=self.client.post_check(head_branch=self.branch,head_sha=self.revision,req=req)
+        
+    def PreCheck(self):
+        success = self.module.PreCheck()
+        conclusion=None
+        self.text_data='<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(self.module.currentStep,self.module.maxSteps,self.module.fail_type,self.module.acc,self.module.lastAcc)
+        out_obj={
+            "title":"{} test suite".format(self.name),
+            "summary":self.summary,
+            "text":'Started Check '+self.text_data
+        }
+        self.UpdateCheckStatus(out_obj,conclusion)
+        return success
+    
+    def PosCheck(self,acc):
+        success = self.module.PosCheck(acc)
+        conclusion=None
+        self.text_data='<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(self.module.currentStep,self.module.maxSteps,self.module.fail_type,self.module.acc,self.module.lastAcc)
+        out_obj={
+            "title":"{} test suite".format(self.name),
+            "summary":self.summary,
+            "text":'Started Check '+self.text_data
+        }
+        self.UpdateCheckStatus(out_obj,conclusion)
+        return success
+    
+    def FinishCheck(self,conclusion=None,summary=None,text=None,fail_type=None):
+    
+        #Merge data and messages
+        if summary:
+            self.summary=summary
+        if fail_type is not None:
+            self.module.fail_type=fail_type
+        if text:
+            self.text=text
+        
+        if self.module.fail_type!=0:
+            modelStatus='failed'
+        else:
+            modelStatus='passed'
+        
+        #Prepare message to to report:
+        msgHtml = " {} (ease.ml) completed succesfully on:<br/>\
+            &emsp;<b>project</b>: {}<br/>\
+            &emsp;<b>branch</b>: {}<br/>\
+            &emsp;<b>revision</b>: {}<br/><br/>\
+            <b>Model status</b>: {}<br/>\
+            <b>Condition evaluated</b>: {}<br/>\
+            <b>Samples required</b>: {}<br/>\
+            <b>Model accuracy now</b>: {}<br/>\
+            <b>Model accuracy before</b>: {}<br/>\
+            <b>Run number</b>: {}/{}<br/>\
+            <b>Conclusion</b>: {}<br/>\
+            <br/>This is e-mail is sent automatically by the ease.ml bot\
+            due to your settings in the .easeml.yml file\
+            ".format(self.name,self.project,self.branch,self.revision,modelStatus,self.module.condition,self.module.N,self.module.acc,self.module.lastAcc,self.module.currentStep,self.module.maxSteps,self.text)+self.module.msgHtml_rel+self.module.msgHtml_error
+        
+        #Prepare e-mail
+        mail=sendMailGmail.easeMailer()
+        to = self.module.email    
+        subject = "{} results".format(self.name)
+        #mail.SendMessage(to, subject, msgHtml)
+        
+        if self.module.fail_type ==0:
+            self.module.lastAcc=self.module.acc
+                
+        #Prepare check_run data       
+        self.text_data='<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(self.module.currentStep,self.module.maxSteps,self.module.fail_type,self.module.acc,self.module.lastAcc)
+
+        #FOR VLDB2019
+        if self.module.fail_type!=0:
+            msgHtml="Model failed the condition {}".format(self.module.condition)
+        else:
+            msgHtml="Model passed the condition {}".format(self.module.condition)
+              
+        if conclusion=='success':
+            
+            out_obj={
+                "title":"{} test suite".format(self.name),
+                "summary":self.summary,
+                "text":msgHtml+self.text_data
+            }
+            
+        elif conclusion=='failure':
+            out_obj={
+                "title":"{} test suite".format(self.name),
+                "summary":self.summary,
+                "text":msgHtml+self.text_data
+            }
+        else:
+            conclusion='neutral'
+            out_obj={
+                "title":"{} test suite".format(self.name),
+                "summary":self.summary,
+                "text":msgHtml+self.text_data
+            }
+        self.UpdateCheckStatus(out_obj,conclusion)
+        
+        
+            
+        
+        
+ 
+    def UpdateCheckStatus(self,out_obj=None,conclusion=None):   
+        t=datetime.datetime.now()
+        tform=t.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        print("@ out_obj ",out_obj)
+
+
+        if conclusion:                       
+            req={   "name":self.name,
+                    "status":"completed",
+                    "conclusion":conclusion,
+                    "completed_at":tform,
+                    "output":out_obj
+                }
+        else:
+            req={   "name":self.name,
+                    "output":out_obj
+                }       
+        self.check_data=self.client.update_check(check_run_id=self.check_data["id"],req=req)    
+
+
+class easeMLcore():
+    def __init__(self,app_id,inst_id,project,revision,branch):
+        self.app_id=app_id
+        self.inst_id=inst_id
+        self.project=project
+        self.revision=revision
+        self.branch=branch
+        self.client=None
+        self.token=None
+        #self.pkey="/home/ubuntu/ETH/easeml/keys/easemlbot.2019-07-15.private-key.pem"
+        #self.pkey="/home/ubuntu/ETH/easeml/keys/gtworkshop2019.2019-07-21.private-key.pem"
+        self.pkey=fpath=os.getenv("HOME")+"/.easeml/keys/workshop2020.2020-03-01.private-key.pem"
+        self.yamld=None
+        print( "\n appid={}\
+                \n instid={}\
+                \n project={}\
+                \n revision={}\
+                \n branch={}\
+                \n token={}\
+                ".format(self.app_id,self.inst_id,self.project,self.revision,self.branch,self.token)
+                )
+        
+    def connectAndGetAccessToken(self):
+        self.client=github_api.GithubClient(app_id=self.app_id,installation_id=self.inst_id,private_key_file=self.pkey,repo_slug=self.project)
+        self.token=self.client.auth_token
+
+    def removePreviousRun(self):
+        shutil.rmtree(self.project,ignore_errors=True)
+
+    def cloneRepository(self):
+        command=['git','clone',"--progress","--verbose",'https://x-access-token:{}@github.com/{}.git'.format(self.token,self.project),self.project]
+        try:
+            proc = subprocess.run(command,stdout=PIPE, stderr=PIPE, check=True)
+            print(proc.stderr.decode("utf-8"))
+            print(proc.stdout.decode("utf-8"))
+            return proc.returncode
+        except Exception as e:
+            print(proc.stderr.decode("utf-8"))
+            print(proc.stdout.decode("utf-8"))
+            print(e)
+            exit(1)
+            return e.returncode
+    
+    #TODO Redundant in easemlCI move to lib
+    def decryptData(self):
+        fpath=os.getenv("HOME")+"/.easeml/"
+        command=["easemlDecryptData",fpath+'keys/easeml_priv.asc',self.project+"/data_test/test.txt.enc"]
+        try:
+            proc = subprocess.run(command,stdout=PIPE, stderr=PIPE, check=True)
+            print(proc.stderr.decode("utf-8"))
+            print(proc.stdout.decode("utf-8"))
+            return proc.returncode
+        except Exception as e:
+            print(e)
+            return e.returncode    
+    
+    def buildDocker(self):
+        command=["docker","build","--tag=test",'.']
+        try:
+            proc = subprocess.run(command,stdout=PIPE, stderr=PIPE, check=True)
+            print(proc.stderr.decode("utf-8"))
+            print(proc.stdout.decode("utf-8"))
+            return proc.returncode
+        except Exception as e:
+            print(dir(e))
+            print(e.keys)
+            print(e)
+            return e.returncode  
+        
+    def runDocker(self):
+        fpath=os.getenv("HOME")+"/.easeml/results"
+        command=["docker","run","--network", "none","-v",f"{fpath}:/data","test"]
+        try:
+            proc = subprocess.run(command,stdout=PIPE, stderr=PIPE, check=True)
+            print(proc.stderr.decode("utf-8"))
+            print(proc.stdout.decode("utf-8"))
+            return proc.returncode
+        except Exception as e:
+            print(e.stderr.decode("utf-8"))
+            print(e.stdout.decode("utf-8"))
+            print(e)
+            return e.returncode
+    
+    #TODO Redundant in easemlCI move to lib
+    def readYaml(self):
+        with open(self.project+"/.easeml.yml", 'r') as stream:
+            try:
+                self.yamld=yaml.safe_load(stream)
+                print(self.yamld)
+            except yaml.YAMLError as exc:
+                print(exc)
+                exit(1)    
+    def copyLibAndId(self):
+        with open('libs/id.txt', 'w') as f:
+            f.write(self.project)
+        src=os.getenv("HOME")+"/.easeml/easemlci_eval/easeml.py"
+        dst="libs/easeml.py"
+        copyfile(src, dst)
+    
+    def readResults(self):
+        src=os.getenv("HOME")+"/.easeml/results/"+self.project
+        with open(src+'/results.txt') as f:
+            acc=f.read().splitlines()[0]    
+        return acc
+    
+    def broadcastResult(self,acc):
+        # TODO hardcoded url used to post results for competition
+        # Not used for vldb demo 2019
+        query = "http://3.13.138.171/scoresWorkshop.php?proj={}&score={}".format(self.project,acc)
+        r = requests.get(query) 
+        print(r)
+        print(r.content)
+        return
+        #pass
+        
+    def RunChecks(self):
+        os.chdir(self.project)
+        check_names=['easeML/ci']
+        #check_module=[EaseMLCI]
+        check_module=[easeMLCI.EaseMLCI]
+                
+        checks=[]
+        for name, module in zip(check_names,check_module):
+            c=easeMLCheck(name,self.client,self.app_id,self.inst_id,self.project,self.revision,self.branch,module)
+            c.StartCheck()
+            checks.append(c)
+        
+        return_statuses=[]
+        for c in checks:
+            return_statuses.append(c.PreCheck())
+        
+        self.copyLibAndId()        
+        if self.buildDocker():
+            print("## DOCKER BUILD FAILURE")
+            for c in checks:
+                c.FinishCheck(conclusion='neutral',summary="Couldn't build the model",text="Error: Couldn't build the dockerized model; test the docker container with the commited evaluate_model.py locally",fail_type=-1)
+            exit(1)    
+
+        if self.runDocker():
+            print("## DOCKER RUN FAILURE")
+            for c in checks:
+                c.FinishCheck(conclusion='neutral',summary="Couldn't run the model",text="Error: Couldn't run the dockerized model; test the docker container with the commited evaluate_model.py locally",fail_type=-2)
+            exit(1)    
+
+        acc=self.readResults()
+        #self.broadcastResult(acc)
+        for success,c in zip(return_statuses,checks):
+            if success:
+                c.PosCheck(acc)
+               
+        for c in checks:
+            c.FinishCheck(conclusion='neutral',summary="Ran succesfully",text='Your accuracy= '+acc)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='easeML github app orchestrator')
+    parser.add_argument('app_id')
+    parser.add_argument('inst_id')
+    parser.add_argument('project')
+    parser.add_argument('revision')
+    parser.add_argument('branch')
+    print(parser.parse_args())
+    app_id=parser.parse_args().app_id
+    inst_id=parser.parse_args().inst_id
+    project=parser.parse_args().project
+    revision=parser.parse_args().revision
+    branch=parser.parse_args().branch
+    eml=easeMLcore(app_id,inst_id,project,revision,branch)
+    eml.connectAndGetAccessToken()
+    eml.removePreviousRun()
+    eml.cloneRepository()
+    eml.RunChecks()
+
+
+    
+
+    

@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+import gnupg
+import os
+import os.path
+import shutil
+from pprint import pprint
+import argparse
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Decrypt PGP files.')
+    parser.add_argument('publicKey')
+    parser.add_argument('filename')
+    parser.add_argument('out_file')
+    kfile=parser.parse_args().publicKey
+    fname=parser.parse_args().filename
+    out_file=parser.parse_args().out_file
+    
+    newhome = "/tmp/.gnupg"
+
+    if os.path.exists(newhome) is True:
+        print("The {0} directory already exists.".format(newhome))
+    else:
+        print("Creating the {0} directory.".format(newhome))
+        os.mkdir(newhome)
+        os.chmod(newhome, 0o700)
+
+    with open(kfile, 'r') as f:
+        key_data = f.read()
+
+    gpg = gnupg.GPG(gnupghome=newhome)
+    import_result = gpg.import_keys(key_data)
+
+    #Uncomment if you want to add it to your trusted keys
+    #fingerprint = (import_result.results[0]["fingerprint"])
+    #res=gpg.trust_keys(fingerprint, 'TRUST_ULTIMATE')
+    print("Import :", bool(import_result.results[0]["ok"]))
+    with open(fname, 'rb') as f:
+        status = gpg.encrypt_file(
+            f, recipients=['ci@ease.ml'],
+            output=out_file,
+            always_trust=True
+        )
+
+    print('ok: ', status.ok)
+    print('status: ', status.status)
+    print('stderr: ', status.stderr)
+    shutil.rmtree(newhome)

@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+import gnupg
+import os
+import os.path
+import shutil
+from pprint import pprint
+
+if __name__ == "__main__":
+    cwd = os.getcwd()
+    newhome = "/tmp/.gnupg"
+    passp='easemlrocks'
+
+    if os.path.exists(newhome) is True:
+        print("The {0} directory already exists.".format(newhome))
+    else:
+        print("Creating the {0} directory.".format(newhome))
+        os.mkdir(newhome)
+        os.chmod(newhome, 0o700)
+
+    gpg = gnupg.GPG(gnupghome=newhome)
+    input_data = gpg.gen_key_input(
+        name_email='ci@ease.ml',
+        passphrase=passp
+    )
+    key = gpg.gen_key(input_data)
+    pkey = str(key.fingerprint)
+    public_keys = gpg.list_keys()
+    private_keys = gpg.list_keys(True)
+    ascii_armored_public_keys = gpg.export_keys(pkey)
+    ascii_armored_private_keys = gpg.export_keys(pkey, secret=True,passphrase=passp)
+    with open(cwd+'/easeml_pub.asc', 'w') as f:
+        f.write(ascii_armored_public_keys)
+    with open(cwd + '/easeml_sec.asc', 'w') as f:
+        f.write(ascii_armored_public_keys)
+        f.write(ascii_armored_private_keys)
+    shutil.rmtree(newhome)
