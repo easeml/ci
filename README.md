@@ -32,6 +32,8 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 - Docker (ML model are run as docker containers)
   - For installation instructions check, e.g. https://docs.docker.com/engine/install/ubuntu/
   - Make sure that it runs without sudo, e.g. https://docs.docker.com/engine/install/linux-postinstall/
+- A public ip or domain name and access configured to the required port, e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010
+
 
 ## Overview
 
