@@ -1,0 +1,9 @@
+ml:
+- script : ./evaluate_model.py
+- condition : n - o > 0.1 +/- 0.1
+- reliability: 0.99
+- mode : fp-free
+- adaptivity : full
+- steps : 32
+- data_mode : local
+- email: leonel@email.com

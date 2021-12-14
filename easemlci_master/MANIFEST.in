@@ -1,3 +1,0 @@
-include Makefile LICENSE requirements.txt
-
-global-exclude *.py[co]

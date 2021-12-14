@@ -3,7 +3,7 @@
 # Learn more: https://github.com/kennethreitz/setup.py
 
 from setuptools import setup, find_packages  # type: ignore
-from easemlci import __version__
+from easeml_cicd import __version__
 
 with open("README.md", "r") as fh:
     README = fh.read()
@@ -13,14 +13,14 @@ with open("requirements.txt", "r") as f:
     REQUIREMENTS = f.readlines()
 
 setup(
-    name='easemlci',
-    version=__version__+".dev.4",
-    description='Libraries and scripts to customize buildbot for ease.ml ci&cd',
+    name='easemlcicd',
+    version=__version__,
+    description='Toolset for continuos integration of ML models',
     long_description=README,
     long_description_content_type="text/markdown",
     author='Leonel Aguilar',
     author_email='leonel.aguilar.m@gmail.com',
-    url='https://github.com/DS3Lab/easeml',
+    url='https://github.com/easeml/cicd',
     license='MIT',
     install_requires=REQUIREMENTS,
     packages=find_packages(),
@@ -30,13 +30,11 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent"
     ],
+    entry_points={},
     scripts=[
-    	"scripts/easeMLcore",
-	"scripts/easemlCreateKey",
-	"scripts/easemlEncryptData",
-	"scripts/easemlDecryptData"
-	],
+        "easeml_cicd/buildbot/scripts/easeml_cicd_runner",
+        "easeml_cicd/buildbot/scripts/easeml_create_key",
+        "easeml_cicd/buildbot/scripts/easeml_encrypt_data",
+        "easeml_cicd/buildbot/scripts/easeml_decrypt_data"
+    ],
 )
-
-
-
