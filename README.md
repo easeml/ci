@@ -29,7 +29,7 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 
 # Prerequisites
 - Buildbot
-- Docker (Docker containers running the ML models are spawned as part of the CI&CD process)
+- Docker (ML model are run as docker containers)
 
 ## Overview
 
@@ -37,4 +37,4 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 2. Install this package
 3. Set the master configuration, e.g. [master.cfg](example_master_cfg/master.cfg)
 4. Run buildbot
-5. Configure your github repository to use buildbot's endpoint for CI&CD
+5. Structure and configure your github repository to use the CI&CD service, e.g. https://github.com/leaguilar/VLDB2019
