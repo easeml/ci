@@ -1,12 +1,12 @@
 # Usage
 
-The Ease.ml CI&CD can be used as a stand-alone library or deployed as a CI&CD service.
+The Ease.ml/CI can be used as a stand-alone library or deployed as a CI&CD service.
 
-# Ease.ml CI&CD as a library
+# Ease.ml/CI as a library
 
 install the library
 ```commandline
-pip install git+https://github.com/easeml/cicd
+pip install git+https://github.com/easeml/ci
 ```
 
 within the python kernel with the installed library
@@ -21,9 +21,9 @@ N = sc.calculate_n()
 ```
 A jupyter notebook showcasing this can be found [here](notebooks/SimpleSampleCalculation.ipynb)
 
-# Ease.ml CI&CD on buildbot
+# Ease.ml/CI on buildbot
 
-Ease.ml/CI&CD can be deployed as a service interfacing with a github repository, 
+Ease.ml/CI can be deployed as a service interfacing with a github repository, 
 deploying models as containers with docker, managing the encrypted datasets and notifying users by email 
 the results of their ML CI&CD pipeline. For this buildbot is used as a base and Easeml/CI&CD is used as a plugin 
 
@@ -51,3 +51,21 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
      - `$HOME/.easeml/keys/easeml_priv.asc`
      - `$HOME/.easeml/keys/easeml_pub.asc` 
 10. Run buildbot
+
+## Citations
+
+```bibtex
+@inproceedings{renggli2019mlsys,
+ author = {Cedric Renggli and Bojan Karlaš and Bolin Ding and Feng Liu and Kevin Schawinski and Wentao Wu and Ce Zhang},
+ booktitle = {Proceedings of Machine Learning and Systems},
+ title = {Continuous Integration of Machine Learning Models with ease.ml/ci: A Rigorous Yet Practical Treatment},
+ year = {2019}
+}
+
+@inproceedings{karlas2020sigkdd,
+ author = {Bojan Karlaš and Matteo Interlandi and Cedric Renggli and Wentao Wu and Ce Zhang and Deepak Mukunthu Iyappan Babu and Jordan Edwards and Chris Lauren and Andy Xu and Markus Weimer},
+ booktitle = {Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining},
+ title = {Building continuous integration services for machine learning},
+ year = {2020}
+}
+```
