@@ -38,7 +38,9 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 ## Overview
 
 1. [Create buildbot master/worker](https://docs.buildbot.net/current/tutorial/firstrun.html#creating-a-master)
-2. Install this package
+2. Install this package on the worker and master
 3. Set the master configuration, e.g. [master.cfg](example_master_cfg/master.cfg)
-4. Run buildbot
-5. Structure and configure your GitHub repository to use the CI&CD service, e.g. https://github.com/leaguilar/VLDB2019
+4. Set dataset decryption keys in $HOME/.easeml/keys/dataset_private_key.pem 
+   - (this is the key required for decrypting the dataset in the repository)
+5. Run buildbot
+6. Structure and configure your GitHub repository to use the CI&CD service, e.g. https://github.com/leaguilar/VLDB2019
