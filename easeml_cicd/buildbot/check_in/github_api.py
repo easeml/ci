@@ -143,18 +143,13 @@ class PatchedGithubIntegration(github.GithubIntegration):
         :param installation_id: int
         :return: :class:`github.InstallationAuthorization.InstallationAuthorization`
         """
-        body = {}
-        if user_id:
-            body = {"user_id": user_id}
+        headers = {
+            'Authorization': f"Bearer {self.create_jwt()}",
+            'Accept': 'application/vnd.github.v3+json',
+        }
         response = requests.post(
-            f"{self.__github_url}/installations/{installation_id}/access_tokens",
-            headers={
-                "Authorization": "Bearer {}".format(self.create_jwt()),
-                "Accept": github.Consts.mediaTypeIntegrationPreview,
-                "User-Agent": "PyGithub/Python"
-            },
-            json=body
-        )
+            f'https://api.github.com/app/installations/{installation_id}/access_tokens',
+            headers=headers)
 
         if response.status_code == 201:
             return github.InstallationAuthorization.InstallationAuthorization(
@@ -192,6 +187,7 @@ def get_github_integration(app_id, key_path, github_url):
 
 
 def get_installation_auth_token(gh_integration, install_id):
+    print("######",install_id)
     return gh_integration.get_access_token(install_id).token
 
 
