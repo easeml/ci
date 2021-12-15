@@ -30,17 +30,21 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 # Prerequisites
 - Buildbot
 - Docker (ML model are run as docker containers)
-  - For installation instructions check, e.g. https://docs.docker.com/engine/install/ubuntu/
-  - Make sure that it runs without sudo, e.g. https://docs.docker.com/engine/install/linux-postinstall/
 - A public ip or domain name and access configured to the required port, e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010
 
 
 ## Overview
 
-1. [Create buildbot master/worker](https://docs.buildbot.net/current/tutorial/firstrun.html#creating-a-master)
-2. Install this package on the worker and master
-3. Set the master configuration, e.g. [master.cfg](example_master_cfg/master.cfg)
-4. Set dataset decryption keys in $HOME/.easeml/keys/dataset_private_key.pem 
-   - (this is the key required for decrypting the dataset in the repository)
-5. Run buildbot
-6. Structure and configure your GitHub repository to use the CI&CD service, e.g. https://github.com/leaguilar/VLDB2019
+1. Provision a server or cluster with a publicly reachable ip/domain name and port,e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010 
+2. Install Docker and enable execution without sudo, e.g. https://docs.docker.com/engine/install/ubuntu/, https://docs.docker.com/engine/install/linux-postinstall/
+3. [Create buildbot master/worker](https://docs.buildbot.net/current/tutorial/firstrun.html#creating-a-master)
+4. Install this package on the worker and master, i.e. `pip install git+https://github.com/easeml/cicd`, on their respective virtual environments
+5. Customize and Set the master configuration, e.g. [master.cfg](example_master_cfg/master.cfg)
+6. Register a GitHub app
+   - Generate the app's `service_private_key.pem`
+   - Register the webhook's location
+   - Enable control over check runs
+7. Structure and configure your GitHub repository to use the GitHub app, e.g. https://github.com/leaguilar/VLDB2019
+8. Set GitHub access keys in `$HOME/.easeml/keys/service_private_key.pem`
+   - (this is the key required for the GitHub app to access the repository)
+9. Run buildbot

@@ -160,7 +160,7 @@ class EaseMLCICDRunner:
         self.branch = branch
         self.client = None
         self.token = None
-        self.pkey = os.getenv("HOME") + "/.easeml/keys/dataset_private_key.pem"
+        self.pkey = os.getenv("HOME") + "/.easeml/keys/service_private_key"
         self.yamld = None
         print("\n appid={}\
                 \n instid={}\
