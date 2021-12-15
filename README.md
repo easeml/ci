@@ -1,8 +1,8 @@
 # Usage
 
-The Ease.ml/CI can be used as a stand-alone library or deployed as a CI&CD service.
+Ease.ml/ci can be used as a stand-alone library or deployed as a CI&CD service.
 
-# Ease.ml/CI as a library
+# Ease.ml/ci as a library
 
 install the library
 ```commandline
@@ -21,9 +21,9 @@ N = sc.calculate_n()
 ```
 A jupyter notebook showcasing this can be found [here](notebooks/SimpleSampleCalculation.ipynb)
 
-# Ease.ml/CI on buildbot
+# Ease.ml/ci on buildbot
 
-Ease.ml/CI can be deployed as a service interfacing with a github repository, 
+Ease.ml/ci can be deployed as a service interfacing with a github repository, 
 deploying models as containers with docker, managing the encrypted datasets and notifying users by email 
 the results of their ML CI&CD pipeline. For this buildbot is used as a base and Easeml/CI&CD is used as a plugin 
 
