@@ -11,6 +11,7 @@ import os
 
 from easeml_cicd.buildbot.mail import sendMailGmail
 from easeml_cicd.core import utils
+import easeml_cicd
 
 
 class EaseMLCICDCheckManager:
@@ -34,7 +35,8 @@ class EaseMLCICDCheckManager:
         success = self.module.pre_check()
         conclusion = None
         self.text_data = '<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(
-            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc, self.module.last_acc)
+            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc,
+            self.module.last_acc)
         out_obj = {
             "title": "{} test suite".format(self.name),
             "summary": self.summary,
@@ -47,7 +49,8 @@ class EaseMLCICDCheckManager:
         success = self.module.pos_check(acc)
         conclusion = None
         self.text_data = '<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(
-            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc, self.module.last_acc)
+            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc,
+            self.module.last_acc)
         out_obj = {
             "title": "{} test suite".format(self.name),
             "summary": self.summary,
@@ -86,7 +89,8 @@ class EaseMLCICDCheckManager:
             <br/>This is e-mail is sent automatically by the ease.ml bot\
             due to your settings in the .easeml.yml file\
             ".format(self.name, self.project, self.branch, self.revision, modelStatus, self.module.condition,
-                     self.module.N, self.module.acc, self.module.last_acc, self.module.current_step, self.module.max_steps,
+                     self.module.N, self.module.acc, self.module.last_acc, self.module.current_step,
+                     self.module.max_steps,
                      self.text) + self.module.msgHtml_rel + self.module.msgHtml_error
 
         # Prepare e-mail
@@ -100,7 +104,8 @@ class EaseMLCICDCheckManager:
 
         # Prepare check_run data
         self.text_data = '<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(
-            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc, self.module.last_acc)
+            self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc,
+            self.module.last_acc)
 
         # FOR VLDB2019
         if self.module.fail_type != 0:
@@ -224,7 +229,8 @@ class EaseMLCICDRunner:
     def copy_lib_and_id(self):
         with open('libs/id.txt', 'w') as f:
             f.write(self.project)
-        src = os.getenv("HOME") + "/.easeml/easemlci_eval/easeml.py"
+        library_path = os.path.dirname(easeml_cicd.__file__)
+        src = os.path.join(library_path, "eval/easeml.py")
         dst = "libs/easeml.py"
         copyfile(src, dst)
 
@@ -250,7 +256,8 @@ class EaseMLCICDRunner:
 
         checks = []
         for name, module in zip(check_names, check_module):
-            c = EaseMLCICDCheckManager(name, self.client, self.app_id, self.inst_id, self.project, self.revision, self.branch,
+            c = EaseMLCICDCheckManager(name, self.client, self.app_id, self.inst_id, self.project, self.revision,
+                                       self.branch,
                                        module)
             c.start_check()
             checks.append(c)
