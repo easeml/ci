@@ -42,12 +42,12 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
 5. Customize and Set the master configuration, e.g. [master.cfg](example_master_cfg/master.cfg)
 6. Register a GitHub app
    - Generate the GitHub app's `service_private_key.pem`
-   - Register the webhook's location
+   - Register the webhook's location, e.g. http://ec2-18-222-118-176.us-east-2.compute.amazonaws.com:8010/change_hook/github
    - Enable control over check runs
 7. Structure and configure your GitHub repository to use the GitHub app, e.g. https://github.com/leaguilar/VLDB2019
 8. Set keys
    - GitHub access keys in `$HOME/.easeml/keys/service_private_key.pem`, (this is the key required for the GitHub app to access the repository)
-   - Data encryption and decryption keys:
+   - Data decryption and encryption keys:
      - `$HOME/.easeml/keys/easeml_priv.asc`
      - `$HOME/.easeml/keys/easeml_pub.asc` 
 10. Run buildbot
