@@ -88,7 +88,8 @@ class EaseMLCICDCheckManager:
             <b>Conclusion</b>: {}<br/>\
             <br/>This is e-mail is sent automatically by the ease.ml bot\
             due to your settings in the .easeml.yml file\
-            ".format(self.name, self.project, self.branch, self.revision, modelStatus, self.module.condition,
+            ".format(self.name, self.project, self.branch, self.revision, modelStatus,
+                     self.module.sample_calculator.condition,
                      self.module.N, self.module.acc, self.module.last_acc, self.module.current_step,
                      self.module.max_steps,
                      self.text) + self.module.msgHtml_rel + self.module.msgHtml_error
@@ -109,9 +110,9 @@ class EaseMLCICDCheckManager:
 
         # FOR VLDB2019
         if self.module.fail_type != 0:
-            msgHtml = "Model failed the condition {}".format(self.module.condition)
+            msgHtml = "Model failed the condition {}".format(self.module.sample_calculato.condition)
         else:
-            msgHtml = "Model passed the condition {}".format(self.module.condition)
+            msgHtml = "Model passed the condition {}".format(self.module.sample_calculato.condition)
 
         if conclusion == 'success':
 
