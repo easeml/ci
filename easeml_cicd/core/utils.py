@@ -16,13 +16,13 @@ import re
 # This one assumes one line per sample
 # TODO cleanup
 class DataManager:
-    def __init__(self, client, project):
+    def __init__(self, client, project,user_or_app_name='easeMLbot'):
         self.base_path = "data_test/"
         self.base_data_file = "test.txt"
+        self.user_or_app_name = user_or_app_name
         self.client = client
         self.project = project
 
-    # TODO Redundant in easemlCI move to lib
     def command_base(self, command):
         try:
             proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
@@ -35,7 +35,6 @@ class DataManager:
             print(e)
             return e.returncode
 
-    # TODO Redundant in easemlCI move to lib
     def decrypt_data(self, in_file=None):
 
         if not in_file:
@@ -45,7 +44,6 @@ class DataManager:
         command = ["easeml_decrypt_data", fpath + 'keys/easeml_priv.asc', in_file]
         return self.command_base(command)
 
-    # TODO Redundant in easemlCI move to lib
     def encrypt_data(self, in_file=None, out_file=None):
         if not in_file or not out_file:
             in_file = self.base_path + self.base_data_file
@@ -62,9 +60,8 @@ class DataManager:
         command = ["git", "commit", "-m {}".format(commit_message)]
         self.command_base(command)
 
-        app_name = 'easeMLbot'
         token = self.client.auth_token
-        command = ("git push https://{}:{}@github.com/{}.git".format(app_name, token, self.project)).split()
+        command = ("git push https://{}:{}@github.com/{}.git".format(self.user_or_app_name, token, self.project)).split()
         self.command_base(command)
 
     def push_changed_files(self, file_list=None):
