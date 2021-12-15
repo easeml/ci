@@ -96,7 +96,7 @@ class EaseMLCICDCheckManager:
 
         # Prepare e-mail
         mail = sendMailGmail.EaseMailer()
-        to = self.module.email
+        to = self.module.sample_calculator.email
         subject = "{} results".format(self.name)
         # mail.SendMessage(to, subject, msgHtml)
 
