@@ -68,4 +68,12 @@ the results of their ML CI&CD pipeline. For this buildbot is used as a base and 
  title = {Building continuous integration services for machine learning},
  year = {2020}
 }
+
+@inproceedings{aguilar2021ease,
+  title={Ease. ML: A Lifecycle Management System for Machine Learning},
+  author={Aguilar Melgar, Leonel and Dao, David and Gan, Shaoduo and G{\"u}rel, Nezihe M and Hollenstein, Nora and Jiang, Jiawei and Karla{\v{s}}, Bojan and Lemmin, Thomas and Li, Tian and Li, Yang and others},
+  booktitle={11th Annual Conference on Innovative Data Systems Research (CIDR 2021)(virtual)},
+  year={2021},
+  organization={CIDR}
+}
 ```
