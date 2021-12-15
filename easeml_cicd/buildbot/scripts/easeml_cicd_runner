@@ -110,9 +110,9 @@ class EaseMLCICDCheckManager:
 
         # FOR VLDB2019
         if self.module.fail_type != 0:
-            msgHtml = "Model failed the condition {}".format(self.module.sample_calculato.condition)
+            msgHtml = "Model failed the condition {}".format(self.module.sample_calculator.condition)
         else:
-            msgHtml = "Model passed the condition {}".format(self.module.sample_calculato.condition)
+            msgHtml = "Model passed the condition {}".format(self.module.sample_calculator.condition)
 
         if conclusion == 'success':
 
