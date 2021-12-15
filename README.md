@@ -27,7 +27,7 @@ Ease.ml/ci can be deployed as a service interfacing with a github repository,
 deploying models as containers with docker, managing the encrypted datasets and notifying users by email 
 the results of their ML CI&CD pipeline. For this buildbot is used as a base and Easeml/CI&CD is used as a plugin 
 
-# Prerequisites
+## Prerequisites
 - Buildbot
 - Docker (ML model are run as docker containers)
 - A public ip or domain name and access configured to the required port, e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010
