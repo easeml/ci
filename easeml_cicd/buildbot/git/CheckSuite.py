@@ -52,7 +52,7 @@ class CheckSuiteHandler(GitHubEventHandler):
         
         return ([], 'git') #Ignore for the time being
         #changes = self._process_check(payload['check_run']['check_suite'], user, repo, repo_url, project,
-        #                               event, properties,check_name,inst_id)
+        #                               event, properties,check_name,inst_id_or_token)
 
         #log.msg("Received {} changes from github".format(len(changes)))
         
@@ -124,7 +124,7 @@ class CheckSuiteHandler(GitHubEventHandler):
                     #'github_distinct': commit.get('distinct', True),
                     'event': event,
                     'app_id': payload['app']['id'],
-                    'inst_id':inst_id,
+                    'inst_id_or_token':inst_id,
                     'check_name':check_name
                 }#,
                 #'category': category

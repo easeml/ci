@@ -14,26 +14,28 @@ import re
 
 # This should be specific to the data format and type
 # This one assumes one line per sample
+def command_base(command):
+    try:
+        proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
+        print(proc.stderr.decode("utf-8"))
+        print(proc.stdout.decode("utf-8"))
+        return proc.returncode
+    except Exception as e:
+        print(e.stderr.decode("utf-8"))
+        print(e.stdout.decode("utf-8"))
+        print(e)
+        return e.returncode
+
+
 # TODO cleanup
 class DataManager:
-    def __init__(self, client, project,user_or_app_name='easeMLbot'):
+    def __init__(self, client, project, user_or_app_name='easeMLbot', token=None):
         self.base_path = "data_test/"
         self.base_data_file = "test.txt"
         self.user_or_app_name = user_or_app_name
+        self.token = token
         self.client = client
         self.project = project
-
-    def command_base(self, command):
-        try:
-            proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            return proc.returncode
-        except Exception as e:
-            print(e.stderr.decode("utf-8"))
-            print(e.stdout.decode("utf-8"))
-            print(e)
-            return e.returncode
 
     def decrypt_data(self, in_file=None):
 
@@ -42,7 +44,7 @@ class DataManager:
 
         fpath = os.getenv("HOME") + "/.easeml/"
         command = ["easeml_decrypt_data", fpath + 'keys/easeml_priv.asc', in_file]
-        return self.command_base(command)
+        return command_base(command)
 
     def encrypt_data(self, in_file=None, out_file=None):
         if not in_file or not out_file:
@@ -50,40 +52,24 @@ class DataManager:
             out_file = self.base_path + self.base_data_file + ".enc"
         fpath = os.getenv("HOME") + "/.easeml/"
         command = ["easeml_encrypt_data", fpath + 'keys/easeml_pub.asc', in_file, out_file]
-        return self.command_base(command)
+        return command_base(command)
 
     def push_changed_files2(self, file_list=None):
         command = ("git add " + " ".join(file_list)).split()
-        self.command_base(command)
+        command_base(command)
 
         commit_message = 'Released exhausted Dataset and Updated Test Dataset [skip ci]'
         command = ["git", "commit", "-m {}".format(commit_message)]
-        self.command_base(command)
+        command_base(command)
 
-        token = self.client.auth_token
-        command = ("git push https://{}:{}@github.com/{}.git".format(self.user_or_app_name, token, self.project)).split()
-        self.command_base(command)
-
-    def push_changed_files(self, file_list=None):
-        token = self.client.auth_token
-        g = Github(login_or_token=token)
-        repo_obj = g.get_repo(self.project)
-        commit_message = 'Released exhausted Dataset and Updated Test Dataset [skip ci]'
-        master_ref = repo_obj.get_git_ref('heads/master')
-        master_sha = master_ref.object.sha
-        base_tree = repo_obj.get_git_tree(master_sha)
-        element_list = list()
-        for entry in file_list:
-            with open(entry, 'rb') as input_file:
-                data = input_file.read()
-            data = base64.b64encode(data)
-            blob = repo_obj.create_git_blob(data.decode("utf-8"), "base64")
-            element = InputGitTreeElement(path=entry, mode='100644', type='blob', sha=blob.sha)
-            element_list.append(element)
-        tree = repo_obj.create_git_tree(element_list, base_tree)
-        parent = repo_obj.get_git_commit(master_sha)
-        commit = repo_obj.create_git_commit(commit_message, tree, [parent])
-        master_ref.edit(commit.sha)
+        # TODO Fix
+        if self.client:
+            token = self.client.auth_token
+        else:
+            token = self.token
+        command = (
+            "git push https://{}:{}@github.com/{}.git".format(self.user_or_app_name, token, self.project)).split()
+        command_base(command)
 
     def extract_samples(self, N):
         print("Extracting Samples:", N)
@@ -131,7 +117,8 @@ class Clause:
                                                                                self.var_consts)
 
     def __str__(self):
-        return "err:{}, exp_const:{}, vars:{}, var_consts:{}".format(self.err, self.exp_const, self.vars, self.var_consts)
+        return "err:{}, exp_const:{}, vars:{}, var_consts:{}".format(self.err, self.exp_const, self.vars,
+                                                                     self.var_consts)
 
 
 # Standard Hoeffding bound
@@ -324,71 +311,71 @@ class EaseMLCICDRunnerSampleManager:
     def check_file_changed(self, fname=None, lrevnum=1):
         command = ['git', 'diff', "--exit-code", '{}~{}'.format(self.revision, lrevnum), '{}'.format(self.revision),
                    fname]
-        try:
-            proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
-            print("No change")
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            return proc.returncode
-        except Exception as e:
-            if (e.returncode == 1):
-                print("Changed")
-                return e.returncode
-            print('Error with command: "' + ' '.join(command) + '"')
-            print(e.stderr.decode("utf-8"))
-            print(e.stdout.decode("utf-8"))
-            print(e)
-            # exit(1)
-            return e.returncode
+        return command_base(command)
 
     def get_current_and_total_run(self):
-        max_rev = 50  # maximum distance from head to check
-        for i in range(1, max_rev + 1):
-            print("### Checking data from revision -{}".format(i))
-            try:
-                data = self.client.list_checks(self.revision + '~' + str(i))
-            except Exception as e:
-                print("Didn't find previous data, assuming initial commit")
+        if self.client:
+            max_rev = 50  # maximum distance from head to check
+            for i in range(1, max_rev + 1):
+                print("### Checking data from revision -{}".format(i))
+                try:
+                    data = self.client.list_checks(self.revision + '~' + str(i))
+                except Exception as e:
+                    print("Didn't find previous data, assuming initial commit")
+                    print(">>> No data found starting from zero")
+                    return 0, 0, 0, 0, 1
+
+                for check_run in data['check_runs']:
+                    if check_run['name'] == self.name:
+                        rawtext = check_run['output']['text']
+                        if not rawtext:
+                            continue
+
+                        start = '<!--'
+                        end = '-->'
+                        print("$$ ", check_run)
+                        result = re.search('%s(.*)%s' % (start, end), rawtext).group(1)
+                        d = json.loads(result)
+                        if 'acc' not in d.keys():
+                            continue
+
+                        if d['acc'] == 0:
+                            acc = d['last_acc']
+                        else:
+                            acc = d['acc']
+
+                        print("### Found data {}".format(d))
+                        return d['current'], d['total'], acc, d['fail_type'], i
+                        # Fail types 0 - No failure
+                        # (negative) Not running model
+                        #    docker -1 couldn't build the docker image
+                        #    docker -2 couldn't run the docker container
+                        #    not enough samples -3
+                        # (positive) Model ran but didn't pass the checks
+
+            print(">>> No data found starting from zero")
+            return 0, 0, 0, 0, 1
+        else:
+            filename = 'run_statistics.json'
+            print(os.getcwd())
+            if os.path.exists(filename):
+                with open(filename) as json_file:
+                    d = json.load(json_file)
+                if d['acc'] == 0:
+                    acc = d['last_acc']
+                else:
+                    acc = d['acc']
+                return d['current'], d['total'], acc, d['fail_type'], 1
+            else:
                 print(">>> No data found starting from zero")
                 return 0, 0, 0, 0, 1
-
-            for check_run in data['check_runs']:
-                if check_run['name'] == self.name:
-                    rawtext = check_run['output']['text']
-                    if not rawtext:
-                        continue
-
-                    start = '<!--'
-                    end = '-->'
-                    print("$$ ", check_run)
-                    result = re.search('%s(.*)%s' % (start, end), rawtext).group(1)
-                    d = json.loads(result)
-                    if 'acc' not in d.keys():
-                        continue
-
-                    if d['acc'] == 0:
-                        acc = d['last_acc']
-                    else:
-                        acc = d['acc']
-
-                    print("### Found data {}".format(d))
-                    return d['current'], d['total'], acc, d['fail_type'], i
-                    # Fail types 0 - No failure
-                    # (negative) Not running model
-                    #    docker -1 couldn't build the docker image
-                    #    docker -2 couldn't run the docker container
-                    #    not enough samples -3 
-                    # (positive) Model ran but didn't pass the checks
-
-        print(">>> No data found starting from zero")
-        return 0, 0, 0, 0, 1
 
     def set_last_acc(self, acc):
         self.last_acc = acc
 
     def pre_check(self):
 
-        data_manager = DataManager(self.client, self.project)
+        data_manager = DataManager(self.client, self.project, self.app_id, self.inst_id)
         data_manager.decrypt_data()
 
         optimization = False  # True
@@ -412,7 +399,6 @@ class EaseMLCICDRunnerSampleManager:
         curr_step, total_steps, self.last_acc, self.fail_type, lrevnum = self.get_current_and_total_run()
         changed_yml = self.check_file_changed(".easeml.yml", lrevnum)
         changed_data = self.check_file_changed("data_test/test.txt.enc", lrevnum)
-        print("token = ", self.client.auth_token)
         print(
             "Status: ChangedYML={} ChangedData={} curr_step={} total_steps={} ".format(changed_yml, changed_data,
                                                                                        curr_step,
@@ -464,7 +450,7 @@ class EaseMLCICDRunnerSampleManager:
         if not passed and self.fail_type >= 0:
             self.fail_type = 1
 
-        data_manager = DataManager(self.client, self.project)
+        data_manager = DataManager(self.client, self.project, self.app_id, self.inst_id)
 
         # For workshop = False
         self.releaseData = True

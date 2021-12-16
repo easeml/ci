@@ -24,7 +24,7 @@ class EaseMLStep(buildstep.ShellMixin, buildstep.BuildStep):
         log.msg("##### ALL CHANGES")
         log.msg(all_changes)
         app_id = all_changes['properties']['app_id'][0]
-        inst_id = all_changes['properties']['inst_id'][0]
+        inst_id = all_changes['properties']['inst_id_or_token'][0]
         project = all_changes['project']
         revision = all_changes['revision']
         branch = all_changes['branch']

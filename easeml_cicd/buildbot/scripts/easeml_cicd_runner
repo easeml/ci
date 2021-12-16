@@ -12,6 +12,8 @@ import os
 from easeml_cicd.buildbot.mail import sendMailGmail
 from easeml_cicd.core import utils
 import easeml_cicd
+from github import Github
+import json
 
 
 class EaseMLCICDCheckManager:
@@ -20,6 +22,9 @@ class EaseMLCICDCheckManager:
         self.project = project
         self.check_data = None
         self.client = client
+        # FIX
+        self.token = inst_id
+        self.user_or_app_name=app_id
         self.branch = branch
         self.revision = revision
         self.module = module(name, client, app_id, inst_id, project, revision, branch)
@@ -29,7 +34,9 @@ class EaseMLCICDCheckManager:
 
     def start_check(self):
         req = {"name": self.name}
-        self.check_data = self.client.post_check(head_branch=self.branch, head_sha=self.revision, req=req)
+        # TODO fix checks
+        if self.client:
+            self.check_data = self.client.post_check(head_branch=self.branch, head_sha=self.revision, req=req)
 
     def pre_check(self):
         success = self.module.pre_check()
@@ -107,7 +114,11 @@ class EaseMLCICDCheckManager:
         self.text_data = '<!--{{"current":{},"total":{}, "fail_type":{},"acc":{},"last_acc":{} }}-->'.format(
             self.module.current_step, self.module.max_steps, self.module.fail_type, self.module.acc,
             self.module.last_acc)
-
+        # FIXME HACKY
+        d = None
+        if not self.client:
+            d = {"current": self.module.current_step, "total": self.module.max_steps,
+                 "fail_type": self.module.fail_type, "acc": self.module.acc, "last_acc": self.module.last_acc}
         # FOR VLDB2019
         if self.module.fail_type != 0:
             msgHtml = "Model failed the condition {}".format(self.module.sample_calculator.condition)
@@ -135,6 +146,24 @@ class EaseMLCICDCheckManager:
                 "summary": self.summary,
                 "text": msgHtml + self.text_data
             }
+
+        # HACKY
+        if not self.client:
+            d['conclusion'] = conclusion
+            d['msg']=out_obj
+            with open('run_statistics.json', 'w') as outfile:
+                json.dump(d, outfile)
+            command = ["git", "add", "run_statistics.json"]
+            utils.command_base(command)
+
+            commit_message = 'Adding run statistics [skip ci]'
+            command = ["git", "commit", "-m {}".format(commit_message)]
+            utils.command_base(command)
+
+            token = self.token
+            command = (
+                "git push https://{}:{}@github.com/{}.git".format(self.user_or_app_name, token, self.project)).split()
+            utils.command_base(command)
         self.update_check_status(out_obj, conclusion)
 
     def update_check_status(self, out_obj=None, conclusion=None):
@@ -154,19 +183,23 @@ class EaseMLCICDCheckManager:
             req = {"name": self.name,
                    "output": out_obj
                    }
-        self.check_data = self.client.update_check(check_run_id=self.check_data["id"], req=req)
+        if self.client:
+            self.check_data = self.client.update_check(check_run_id=self.check_data["id"], req=req)
 
 
 class EaseMLCICDRunner:
-    def __init__(self, app_id, inst_id, project, revision, branch):
+    def __init__(self, app_id, inst_id_or_token, project, revision, branch, github_action_g):
         self.app_id = app_id
-        self.inst_id = inst_id
+        self.inst_id_or_token = inst_id_or_token
         self.project = project
         self.revision = revision
         self.branch = branch
         self.client = None
         self.token = None
+        self.github_action = github_action_g
         self.pkey = os.getenv("HOME") + "/.easeml/keys/service_private_key.pem"
+        if github_action_g:
+            self.pkey = None
         self.yamld = None
         print("\n appid={}\
                 \n instid={}\
@@ -174,13 +207,20 @@ class EaseMLCICDRunner:
                 \n revision={}\
                 \n branch={}\
                 \n token={}\
-                ".format(self.app_id, self.inst_id, self.project, self.revision, self.branch, self.token)
+                ".format(self.app_id, self.inst_id_or_token, self.project, self.revision, self.branch, self.token)
               )
 
     def connect_and_get_access_token(self):
-        self.client = github_api.GithubClient(app_id=self.app_id, installation_id=self.inst_id,
-                                              private_key_file=self.pkey, repo_slug=self.project)
-        self.token = self.client.auth_token
+        # TODO fix checks
+        if self.github_action:
+            self.client = None  # Github("access_token")
+            # self.client = github_api.GithubClient(app_id=self.app_id, installation_id=self.inst_id_or_token,
+            #                                      private_key_file=self.pkey, repo_slug=self.project, is_action=self.github_action)
+            self.token = self.inst_id_or_token
+        else:
+            self.client = github_api.GithubClient(app_id=self.app_id, installation_id=self.inst_id_or_token,
+                                                  private_key_file=self.pkey, repo_slug=self.project)
+            self.token = self.client.auth_token
 
     def remove_previous_run(self):
         shutil.rmtree(self.project, ignore_errors=True)
@@ -188,44 +228,16 @@ class EaseMLCICDRunner:
     def clone_repository(self):
         command = ['git', 'clone', "--progress", "--verbose",
                    'https://x-access-token:{}@github.com/{}.git'.format(self.token, self.project), self.project]
-        try:
-            proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            return proc.returncode
-        except Exception as e:
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            print(e)
-            exit(1)
-            return e.returncode
+        return utils.command_base(command)
 
     def build_docker(self):
         command = ["docker", "build", "--tag=test", '.']
-        try:
-            proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            return proc.returncode
-        except Exception as e:
-            print(dir(e))
-            print(e.keys)
-            print(e)
-            return e.returncode
+        return utils.command_base(command)
 
     def run_docker(self):
         fpath = os.getenv("HOME") + "/.easeml/results"
         command = ["docker", "run", "--network", "none", "-v", f"{fpath}:/data", "test"]
-        try:
-            proc = subprocess.run(command, stdout=PIPE, stderr=PIPE, check=True)
-            print(proc.stderr.decode("utf-8"))
-            print(proc.stdout.decode("utf-8"))
-            return proc.returncode
-        except Exception as e:
-            print(e.stderr.decode("utf-8"))
-            print(e.stdout.decode("utf-8"))
-            print(e)
-            return e.returncode
+        return utils.command_base(command)
 
     def copy_lib_and_id(self):
         with open('libs/id.txt', 'w') as f:
@@ -257,7 +269,8 @@ class EaseMLCICDRunner:
 
         checks = []
         for name, module in zip(check_names, check_module):
-            c = EaseMLCICDCheckManager(name, self.client, self.app_id, self.inst_id, self.project, self.revision,
+            c = EaseMLCICDCheckManager(name, self.client, self.app_id, self.inst_id_or_token, self.project,
+                                       self.revision,
                                        self.branch,
                                        module)
             c.start_check()
@@ -299,17 +312,20 @@ class EaseMLCICDRunner:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='easeML ci&cd github app orchestrator')
     parser.add_argument('app_id')
-    parser.add_argument('inst_id')
+    parser.add_argument('inst_id_or_token')
     parser.add_argument('project')
     parser.add_argument('revision')
     parser.add_argument('branch')
+    parser.add_argument('-g', '--github_action', action='store_true')
     print(parser.parse_args())
     app_id_g = parser.parse_args().app_id
-    inst_id_g = parser.parse_args().inst_id
+    inst_id_or_token_g = parser.parse_args().inst_id_or_token
     project_g = parser.parse_args().project
     revision_g = parser.parse_args().revision
     branch_g = parser.parse_args().branch
-    eml = EaseMLCICDRunner(app_id_g, inst_id_g, project_g, revision_g, branch_g)
+    github_action_g = parser.parse_args().github_action
+    print("####", github_action_g)
+    eml = EaseMLCICDRunner(app_id_g, inst_id_or_token_g, project_g, revision_g, branch_g, github_action_g)
     eml.connect_and_get_access_token()
     eml.remove_previous_run()
     eml.clone_repository()
