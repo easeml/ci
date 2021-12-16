@@ -6,9 +6,14 @@ Ease.ml/ci is a library to support continuous testing and integration of machine
 
 There exist many different CI/CD tools for classical software development (e.g., [Jenkins](https://www.jenkins.io/)). However, using them out-of-the box for continously testing machine learning models can lead to failures in production. The reason is firstly, that when testing an ML model with a fixed test set, one has to take into account the inherent randomness of ML. Secondly, when using the same test set multiple times, one has to make sure to not overfitt to it, even when only evaluating and having access to the outcome of test conditions. More details about the inherent challenges on how to test ML models can be found in our [blog post](https://ds3lab.ghost.io/ci/).
 
+### Sample size estimator
+
+The core component of ease.ml/ci is a sample size estimator. Given a test condition, the number of commits one itends to use the same test set, and the confidence bounds one has to guarantee, the sample size estimator will output the minimum number of samples required to satisfy these requirements.
+This estimator can then be uses in a standalone fashion (i.e., as a library), or integreated in a CI/CD workflow (i.e., using GitHub action or buildbot). The later requires to also include functionalities on how to actually calculate quantities supported in the test conditions (like accuracy or difference in predictions of models), and how to notify the user to provide a new test set and replace the existing one in the system.
+
 ## Ease.ml/ci as a library
 
-install the library
+Install the library
 ```commandline
 pip install git+https://github.com/easeml/ci
 ```
