@@ -52,8 +52,8 @@ jobs:
             - name: Run CI Test
               run: |
                 # Set identity for commits
-                git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
-                git config --global user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
+                git config --global user.name ${GITHUB_ACTOR}
+                git config --global user.email ${GITHUB_ACTOR}@email
                 
                 # Calling the ci runner
                 easeml_cicd_runner ${GITHUB_ACTOR} ${{ secrets.GITHUB_TOKEN }} ${GITHUB_REPOSITORY} ${GITHUB_SHA} ${GITHUB_REF_NAME} -g
@@ -63,13 +63,17 @@ jobs:
                 FILE=${GITHUB_REPOSITORY}/run_statistics.json
                 if [ -f "$FILE" ]; then
                     echo "Results exist."
+                    echo "::notice ::Results Exists"
                 else 
                     echo "Unable to find test results."
+                    echo "::error ::Unable to find test results."
                     exit 1
                 fi
                 if [ $(jq .fail_type $FILE) -eq "0" ]; then
                    echo "Your model passed";
+                   echo "::notice ::Your model passed"
                 else
-                   echo "Your model failed";
+                   echo "Your model did not pass";
+                   echo "::error ::Your model did not pass"
                    exit 1
                 fi
