@@ -470,7 +470,7 @@ class EaseMLCICDRunnerSampleManager:
         data_manager = DataManager(self.client, self.project)
 
         # For workshop = False
-        self.releaseData = True
+        self.releaseData = False
         if self.releaseData:
             data_manager.release_samples(self.N)
             self.msgHtml_rel = "<br/>The exhausted data has been released"
