@@ -15,7 +15,7 @@ if __name__ == "__main__":
     fname=parser.parse_args().filename
     newhome = "/tmp/.gnupg"
     passp='easemlrocks'
-    print("Decrypting {}".format(fname))
+    print("Decrypting {} using key {}".format(fname,kfile))
     if os.path.exists(newhome) is True:
         print("The {0} directory already exists.".format(newhome))
     else:
