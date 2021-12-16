@@ -33,7 +33,7 @@ if __name__ == "__main__":
     #Uncomment if you want to add it to your trusted keys
     #fingerprint = (import_result.results[0]["fingerprint"])
     #res=gpg.trust_keys(fingerprint, 'TRUST_ULTIMATE')
-    print("Import :", bool(import_result.results[0]["ok"]))
+    print("Import :", import_result.results[0])
     with open(fname, 'rb') as f:
         status = gpg.encrypt_file(
             f, recipients=['ci@ease.ml'],
