@@ -40,6 +40,8 @@ cat easeml_priv.asc | base64 -w 0
 3. Store the keys as GitHub Secrets under the names `B64_EASEML_PUB` and `B64_EASEML_PRIV`.
 4. Create a GitHub Action yaml under `.github/workflows/`, e.g. [easemlci.yml](example_github_action/easemlci.yml)
 
+An example repository using Ease.ml/ci as a GitHub action can be found here: https://github.com/leaguilar/ci_action
+
 # Ease.ml/ci on buildbot
 
 For heavier workloads Ease.ml/ci can be deployed as a service interfacing with a github repository, 
