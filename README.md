@@ -1,8 +1,12 @@
-# Usage
+# Ease.ml/ci
 
-Ease.ml/ci can be used as a stand-alone library or deployed as a CI&CD service.
+Ease.ml/ci is a library to support continuous testing and integration of machine learning models with statistical guarantees. It can be used as a stand-alone library or deployed as a CI&CD service.
 
-# Ease.ml/ci as a library
+### Why another CI/CD system
+
+There exist many different CI/CD tools for classical software development (e.g., [Jenkins](https://www.jenkins.io/)). However, using them out-of-the box for continously testing machine learning models can lead to failures in production. The reason is firstly, that when testing an ML model with a fixed test set, one has to take into account the inherent randomness of ML. Secondly, when using the same test set multiple times, one has to make sure to not overfitt to it, even when only evaluating and having access to the outcome of test conditions. More details about the inherent challenges on how to test ML models can be found in our [blog post](https://ds3lab.ghost.io/ci/).
+
+## Ease.ml/ci as a library
 
 install the library
 ```commandline
@@ -21,11 +25,11 @@ N = sc.calculate_n()
 ```
 A jupyter notebook showcasing this can be found [here](notebooks/SimpleSampleCalculation.ipynb)
 
-# Ease.ml/ci as a GitHub action
+## Ease.ml/ci as a GitHub action
 Ease.ml/ci can be used within a GitHub Action.
-## Prerequisites
+### Prerequisites
 - Ease.ML/ci repository structure
-## Overview
+### Overview
 1. Generate dataset encryption and decryption keys, by running the command.
 ```commandline
 easeml_create_key
@@ -42,20 +46,20 @@ cat easeml_priv.asc | base64 -w 0
 
 An example repository using Ease.ml/ci as a GitHub Action can be found here: https://github.com/leaguilar/ci_action
 
-# Ease.ml/ci on buildbot
+## Ease.ml/ci on buildbot
 
 For heavier workloads Ease.ml/ci can be deployed as a service interfacing with a github repository, 
 deploying models as containers with docker, managing the encrypted datasets and notifying users by email 
 the results of their ML CI&CD pipeline. For this buildbot is used as a base and Easeml/CI&CD is used as a plugin 
 
-## Prerequisites
+### Prerequisites
 - Ease.ML/ci repository structure
 - Buildbot
 - Docker (ML model are run as docker containers)
 - A public ip or domain name and access configured to the required port, e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010
 
 
-## Overview
+### Overview
 
 A playlist with a detailed example of setting up the service can be found [here](https://www.youtube.com/playlist?list=PLxziVpXjhWYhHFyM3qPRbJPpHTnn2TI0m) and the videos are linked throughout the overview
 
