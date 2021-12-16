@@ -21,13 +21,33 @@ N = sc.calculate_n()
 ```
 A jupyter notebook showcasing this can be found [here](notebooks/SimpleSampleCalculation.ipynb)
 
+# Ease.ml/ci as a GitHub action
+Ease.ml/ci can be used within a GitHub Action.
+## Prerequisites
+- Ease.ML/ci repository structure
+## Overview
+1. Generate dataset encryption and decryption keys, by running the command.
+```commandline
+easeml_create_key
+```
+2. Base64 encode the keys and add them as a repository secret.
+```commandline
+cat easeml_pub.asc | base64 -w 0
+```
+```commandline
+cat easeml_priv.asc | base64 -w 0
+```
+3. Store the keys as GitHub Secrets under the names `B64_EASEML_PUB` and `B64_EASEML_PRIV`.
+4. Create a GitHub Action yaml under `.github/workflows/`, e.g. [easemlci.yml](example_github_action/easemlci.yml)
+
 # Ease.ml/ci on buildbot
 
-Ease.ml/ci can be deployed as a service interfacing with a github repository, 
+For heavier workloads Ease.ml/ci can be deployed as a service interfacing with a github repository, 
 deploying models as containers with docker, managing the encrypted datasets and notifying users by email 
 the results of their ML CI&CD pipeline. For this buildbot is used as a base and Easeml/CI&CD is used as a plugin 
 
 ## Prerequisites
+- Ease.ML/ci repository structure
 - Buildbot
 - Docker (ML model are run as docker containers)
 - A public ip or domain name and access configured to the required port, e.g. http://ec2-18-219-109-220.us-east-2.compute.amazonaws.com:8010
