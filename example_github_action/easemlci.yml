@@ -1,0 +1,75 @@
+name: Easeml/CI
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - 'master'
+      - 'feature/cicd'
+  create:
+    tags:
+      - 'v*'
+env:
+    CI: true
+    TERM: xterm
+jobs:
+    easeml_ci:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install Prerequisites
+              run: |
+                echo "Initializing the software prerequisites"
+                sudo apt update
+                sudo apt install -y jq
+                sudo apt install -y build-essential python3-dev libssl-dev libffi-dev
+                sudo apt install -y ca-certificates curl gnupg lsb-release
+                echo "Installing docker"
+                echo "Adding docker gpg key"
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                echo "Setting the correct docker repository"
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                echo "Updating APT"
+                sudo apt update
+                echo "Installing Docker engine"
+                sudo apt install -y docker-ce docker-ce-cli containerd.io
+                echo "Enabling non sudo use of docker"
+                sudo usermod -aG docker $USER
+                newgrp docker
+                
+                echo "Installing Easeml/CI" 
+                pip install git+https://github.com/easeml/ci.git@feature/actions
+                
+                pip uninstall gnupg
+                pip install python-gnupg
+                
+                echo "Adding decryption and encryption keys"
+                mkdir -p $HOME/.easeml/keys
+                
+                echo ${{ secrets.B64_EASEML_PRIV }} | base64 -d > $HOME/.easeml/keys/easeml_priv.asc
+                echo ${{ secrets.B64_EASEML_PUB }} | base64 -d > $HOME/.easeml/keys/easeml_pub.asc
+
+            - name: Run CI Test
+              run: |
+                # Set identity for commits
+                git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+                git config --global user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
+                
+                # Calling the ci runner
+                easeml_cicd_runner ${GITHUB_ACTOR} ${{ secrets.GITHUB_TOKEN }} ${GITHUB_REPOSITORY} ${GITHUB_SHA} ${GITHUB_REF_NAME} -g
+
+            - name: Eval CI Test
+              run: |
+                FILE=${GITHUB_REPOSITORY}/run_statistics.json
+                if [ -f "$FILE" ]; then
+                    echo "Results exist."
+                else 
+                    echo "Unable to find test results."
+                    exit 1
+                fi
+                if [ $(jq .fail_type $FILE) -eq "0" ]; then
+                   echo "Your model passed";
+                else
+                   echo "Your model failed";
+                   exit 1
+                fi
