@@ -1,6 +1,7 @@
 # Ease.ml/ci
 
 ![GitHub](https://img.shields.io/github/license/easeml/ci)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 
 Ease.ml/ci is a library to support continuous testing and integration of machine learning models with statistical guarantees. It can be used as a stand-alone library or deployed as a CI&CD service.
 
